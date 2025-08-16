@@ -1,3 +1,3 @@
-import {upload} from './multer.middleware'
+import {upload} from './multer.middleware.js'
 
 export {upload}
