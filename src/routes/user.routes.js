@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { registerUser,loginUser,logoutUser } from "../conrollers/index.js";
+import { registerUser,loginUser,logoutUser,refreshAccessToken } from "../conrollers/index.js";
 import {upload} from "../middlewares/index.js"
-import { verify } from "jsonwebtoken";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+
 const router = Router();
 
 router.route("/register").post(
@@ -25,5 +25,6 @@ router.route("/login").post(
 
 // secured routes
 router.route("/logout").post(verifyJWT,logoutUser)
+router.route("/refresh-token").post(refreshAccessToken)
 
 export default router
