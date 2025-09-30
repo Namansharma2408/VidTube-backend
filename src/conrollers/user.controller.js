@@ -1,23 +1,17 @@
 import { asyncHandler, ApiError, ApiResponse } from "../utils/index.js";
 import { User } from "../models/index.js";
 import { uploadOnCloudinary } from "../utils/index.js";
-import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-import { use } from "react";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
-    console.log("Generating tokens for userId:", userId);
     const user = await User.findById(userId);
-    console.log("User in 2nd step of generateAccessAndRefreshToken");
     if (!user) {
       throw new ApiError(404, "User not found");
     }
-    console.log("User in 3rd step of generateAccessAndRefreshToken");
     const accesstoken = user.generateAccessToken();
     const refreshtoken = user.generateRefreshToken();
-    console.log("Generated tokens", { accesstoken, refreshtoken });
     user.refreshtoken = refreshtoken;
     await user.save({ validateBeforeSave: false });
 
@@ -160,8 +154,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshtoken: undefined,
+      $unset: {
+        refreshtoken: 1, // this removes the field in document
       },
     },
     {
@@ -245,7 +239,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
-    .json(200, req.user, "Current user fetched successfully");
+    .json(new ApiResponse(200, req.user, "User fetched successfully"));
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -255,7 +249,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -360,7 +354,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
           $size: "$subscribers",
         },
         channelSubscriberdToCount: {
-          $size: "subscriberedTo",
+          $size: "$subscriberedTo",
         },
         isSubscribed: {
           $cond: {
@@ -430,7 +424,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
           {
             $addFields: {
               owner: {
-                $first: "owner",
+                $first: "$owner",
               },
             },
           },
@@ -438,7 +432,6 @@ const getWatchHistory = asyncHandler(async (req, res) => {
       },
     },
   ]);
-
   return res
     .status(200)
     .json(
